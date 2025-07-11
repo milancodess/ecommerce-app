@@ -6,8 +6,13 @@ import userModel from "../models/userModel.js";
 const addToCart = async (req, res) => {
   try {
     const { userId, itemId, size } = req.body;
+
     const userData = await userModel.findById(userId);
-    let cartData = userData.cartData;
+    if (!userData)
+      return res.json({ success: false, message: "User not found" });
+
+    let cartData = userData.cartData || {}; // ✅ Fallback if undefined
+
     if (cartData[itemId]) {
       if (cartData[itemId][size]) {
         cartData[itemId][size] += 1;
@@ -18,10 +23,12 @@ const addToCart = async (req, res) => {
       cartData[itemId] = {};
       cartData[itemId][size] = 1;
     }
-    await userModel.findByIdAndUpdate(userId, { cartData });
+
+    await userModel.findByIdAndUpdate(userId, { cartData }, { new: true }); // ✅ Added { new: true }
+
     res.json({ success: true, message: "Added to cart." });
   } catch (error) {
-    console.log(error);
+    console.error("Add to cart error:", error);
     res.json({ success: false, message: error.message });
   }
 };
